@@ -1,6 +1,7 @@
 import { Component } from "react";
+import ReactPaginate from "react-paginate";
 import { Link } from "react-router-dom";
-import { Button, ButtonGroup, Container, Pagination, PaginationItem, PaginationLink, Table } from "reactstrap";
+import { Button, ButtonGroup, Container, Table } from "reactstrap";
 
 class ProductList extends Component {
 
@@ -8,19 +9,41 @@ class ProductList extends Component {
         super(props);
         this.state = {
             products: [],
-            totalPages: 1
+            totalPages: 1,
+            pageSize: 2,
+            currentPage: 1,
+            dropdownOpen: false
         };
         this.remove = this.remove.bind(this);
-        this.category = this.getTotalPages.bind(this);
+        this.getTotalPages = this.getTotalPages.bind(this);
+        this.getProductOfPage = this.getProductOfPage.bind(this);
+        this.toggle = this.toggle.bind(this);
     }
 
     componentDidMount() {
         fetch("/products/all")
             .then(response => response.json())
             .then(data => {
-                this.setState({products: data});
-                sessionStorage.setItem("products", JSON.stringify(this.state.products));
-            });        
+                // this.setState({products: data});
+                sessionStorage.setItem("products", JSON.stringify(data));
+            });
+        this.getProductOfPage(this.state.currentPage, this.state.pageSize);
+        this.getTotalPages(this.state.pageSize);
+    }
+
+    toggle() {
+        this.setState(prevState => ({
+            dropdownOpen: !prevState.dropdownOpen
+        }));
+    }
+
+    async getProductOfPage(page, size) {
+        await fetch(`/products?page=${page}&size=${size}`)
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                this.setState({ products: data });
+            });
     }
 
     async remove(code) {
@@ -32,30 +55,31 @@ class ProductList extends Component {
             }
         }).then(() => {
             let updatedProducts = [...this.state.products].filter(i => i.code !== code);
-            this.setState({products: updatedProducts});
+            this.setState({ products: updatedProducts });
         });
     }
 
     async getTotalPages(size) {
         await fetch(`/products/pages?size=${size}`)
-        .then((total) => {
-            this.setState({totalPages: total})
-        });
-    }    
+            .then(response => response.json())
+            .then((total) => {
+                this.setState({ totalPages: total })
+            });
+    }
 
     render() {
-        this.getTotalPages(5);
-        const {products, isLoading} = this.state;
-        const {totalPages} = this.state;
+
+        const { products, isLoading } = this.state;
+        const { totalPages } = this.state;
 
         if (isLoading) {
             return <p>Loading...</p>
         }
-        
+
         const productList = products.map(product => {
             return <tr key={product.code}>
                 <td>{product.code}</td>
-                <td style={{whiteSpace: 'nowrap'}}>{product.name}</td>
+                <td style={{ whiteSpace: 'nowrap' }}>{product.name}</td>
                 <td>{product.category}</td>
                 <td>{product.brand}</td>
                 <td>{product.type}</td>
@@ -69,46 +93,66 @@ class ProductList extends Component {
             </tr>
         });
 
-        let paginationSize;       
-        for (let index = 0; index < totalPages; index++) {
-            paginationSize += <PaginationItem>
-                <PaginationLink href="">
-                    index;
-                </PaginationLink>
-            </PaginationItem>
-        }
-        
-
         return (<div>
             <Container fluid>
-            <   h3>Products</h3>
+                <   h3>Products</h3>
                 <div className="float-left">
                     <Button color="success" tag={Link} to="/products/new">Create new Product</Button>
-                </div>                
+                </div>
                 <Table className="mt-4" bordered>
                     <thead>
-                    <tr>
-                        <th width="10%">Code</th>
-                        <th width="30%">Name</th>
-                        <th width="10%">Category</th>
-                        <th width="10%">Brand</th>
-                        <th width="10%">Type</th>
-                        <th width="30%">Description</th>
-                    </tr>
+                        <tr>
+                            <th width="10%">Code</th>
+                            <th width="30%">Name</th>
+                            <th width="10%">Category</th>
+                            <th width="10%">Brand</th>
+                            <th width="10%">Type</th>
+                            <th width="30%">Description</th>
+                        </tr>
                     </thead>
                     <tbody>
-                    {productList}
+                        {productList}
                     </tbody>
                 </Table>
-            <Pagination>
-                <PaginationItem>
-                    <PaginationLink previous href="" />
-                </PaginationItem>
-                {paginationSize}
-                <PaginationItem>
-                    <PaginationLink next href="" />
-                </PaginationItem>
-            </Pagination>
+                <div>
+                    <label for="cars">Items per page: </label>
+                    {/* <Select className="basic-single"
+                    classNamePrefix="select" options={options} onChange={e => this.setState({pageSize: e})}></Select> */}
+                    <select name="cars" id="cars" onChange={e => { 
+                        this.setState({ pageSize: e.target.value });
+                        // this.setState({ pageSize: 12 });
+                        this.getTotalPages(this.state.pageSize);
+                        this.getProductOfPage(this.state.currentPage ,this.state.pageSize);
+                    }
+                    }>
+                        <option value="10">10</option>
+                        <option value="15">15</option>
+                        <option value="20">20</option>
+                        <option value="25">25</option>
+                    </select>
+                    <br></br><br></br>
+                    <ReactPaginate
+                        breakLabel="..."
+                        nextLabel="next >"
+                        onPageChange={e => { this.getProductOfPage(e.selected + 1, this.state.pageSize); this.setState({currentPage: e.selected+  1}) }}
+                        pageRangeDisplayed={3}
+                        marginPagesDisplayed={2}
+                        pageCount={totalPages}
+                        previousLabel="< previous"
+                        renderOnZeroPageCount={null}
+                        pageClassName="page-item"
+                        pageLinkClassName="page-link"
+                        previousClassName="page-item"
+                        previousLinkClassName="page-link"
+                        nextClassName="page-item"
+                        nextLinkClassName="page-link"
+                        breakClassName="page-item"
+                        breakLinkClassName="page-link"
+                        containerClassName="pagination"
+                        activeClassName="active"
+                    />
+                </div>
+
             </Container>
         </div>
         );
