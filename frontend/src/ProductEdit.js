@@ -21,6 +21,7 @@ class ProductEdit extends Component {
         };
         this.handleChange = this.handleChange.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
+        this.formatInput = this.formatInput.bind(this);
     };
 
     async componentDidMount() {
@@ -28,6 +29,14 @@ class ProductEdit extends Component {
             const product = await (await fetch(`/products/${this.props.match.params.code}`)).json();
             this.setState({item: product, isReadonly: true});
         }
+    }
+    
+    formatInput(event) {
+        const value = event.target.value.trim();
+        const name = event.target.name;
+        let item = {...this.state.item};
+        item[name] = value;
+        this.setState({item});
     }
 
     validateId(event) {
@@ -86,7 +95,7 @@ class ProductEdit extends Component {
                         <Input type="text" name="code" id="code" value={item.code || ''}                                                      
                             onChange={(e) => {this.handleChange(e); this.validateId(e)}} 
                             invalid={requiredInputState === "bad"} 
-                            autoComplete="code" readOnly={isReadOnly} />
+                            autoComplete="code" readOnly={isReadOnly} required />
                         <FormFeedback>
                             Code is already existed.
                         </FormFeedback>
@@ -94,12 +103,13 @@ class ProductEdit extends Component {
                     <FormGroup>
                         <Label for="name">Name<span style={{ color: 'red' }}>*</span></Label>
                         <Input type="text" name="name" id="name" value={item.name || ''}
-                            onChange={this.handleChange} autoComplete="name" required />
+                            onChange={this.handleChange} autoComplete="name" onBlur={this.formatInput}
+                            required />
                     </FormGroup>
                     <FormGroup>
-                        <Label for="email">Category<span style={{ color: 'red' }}>*</span></Label>
+                        <Label for="category">Category<span style={{ color: 'red' }}>*</span></Label>
                         <Input type="text" name="category" id="category" value={item.category || ''}
-                            onChange={this.handleChange} autoComplete="category" required />
+                            onChange={this.handleChange} autoComplete="category" onBlur={this.formatInput} required />
                     </FormGroup>
                     <FormGroup>
                         <Label for="brand">Brand</Label>

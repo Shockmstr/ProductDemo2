@@ -10,14 +10,14 @@ class ProductList extends Component {
         this.state = {
             products: [],
             totalPages: 1,
-            pageSize: 2,
+            pageSize: 10,
             currentPage: 1,
             dropdownOpen: false
         };
         this.remove = this.remove.bind(this);
         this.getTotalPages = this.getTotalPages.bind(this);
         this.getProductOfPage = this.getProductOfPage.bind(this);
-        this.toggle = this.toggle.bind(this);
+        this.changePageSize = this.changePageSize.bind(this);
     }
 
     componentDidMount() {
@@ -31,10 +31,11 @@ class ProductList extends Component {
         this.getTotalPages(this.state.pageSize);
     }
 
-    toggle() {
-        this.setState(prevState => ({
-            dropdownOpen: !prevState.dropdownOpen
-        }));
+    changePageSize(size) {
+        this.setState({pageSize: size}, () => {
+            this.getTotalPages(this.state.pageSize);
+            this.getProductOfPage(this.state.currentPage ,this.state.pageSize);
+        });    
     }
 
     async getProductOfPage(page, size) {
@@ -76,8 +77,9 @@ class ProductList extends Component {
             return <p>Loading...</p>
         }
 
-        const productList = products.map(product => {
+        const productList = products.map((product, index) => {
             return <tr key={product.code}>
+                <td>{index + 1}</td>
                 <td>{product.code}</td>
                 <td style={{ whiteSpace: 'nowrap' }}>{product.name}</td>
                 <td>{product.category}</td>
@@ -102,7 +104,8 @@ class ProductList extends Component {
                 <Table className="mt-4" bordered>
                     <thead>
                         <tr>
-                            <th width="10%">Code</th>
+                            <th width="5%">ID</th>
+                            <th width="5%">Code</th>
                             <th width="30%">Name</th>
                             <th width="10%">Category</th>
                             <th width="10%">Brand</th>
@@ -116,13 +119,8 @@ class ProductList extends Component {
                 </Table>
                 <div>
                     <label for="cars">Items per page: </label>
-                    {/* <Select className="basic-single"
-                    classNamePrefix="select" options={options} onChange={e => this.setState({pageSize: e})}></Select> */}
                     <select name="cars" id="cars" onChange={e => { 
-                        this.setState({ pageSize: e.target.value });
-                        // this.setState({ pageSize: 12 });
-                        this.getTotalPages(this.state.pageSize);
-                        this.getProductOfPage(this.state.currentPage ,this.state.pageSize);
+                        this.changePageSize(parseInt(e.target.value, 10))
                     }
                     }>
                         <option value="10">10</option>
